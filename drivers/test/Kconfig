@@ -1,0 +1,13 @@
+menuconfig TEST_DRIVERS
+	bool "Test Drivers"
+	help
+	  Say Y to enable test drivers.
+
+if TEST_DRIVERS
+
+config PLATFORM_TEST_DRIVER
+	tristate "Platform test driver"
+	default n
+	help
+	  This option enables the platform test driver.
+endif # TEST_DRIVERS

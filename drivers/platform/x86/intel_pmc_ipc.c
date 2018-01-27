@@ -508,7 +508,7 @@ static int ipc_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	ret = devm_request_irq(&pdev->dev, pdev->irq, ioc, 0, "intel_pmc_ipc",
 				pmc);
 	if (ret) {
-		dev_err(&pdev->dev, "Failed to request irq\n");
+		dev_err(&pdev->dev, "Failed to request IRQ\n");
 		return ret;
 	}
 
@@ -738,7 +738,7 @@ static int ipc_create_pmc_devices(void)
 	if (!acpi_has_watchdog()) {
 		ret = ipc_create_tco_device();
 		if (ret) {
-			dev_err(ipcdev.dev, "Failed to add tco platform device\n");
+			dev_err(ipcdev.dev, "Failed to add TCO platform device\n");
 			return ret;
 		}
 	}
@@ -768,13 +768,13 @@ static int ipc_plat_get_res(struct platform_device *pdev)
 	res = platform_get_resource(pdev, IORESOURCE_IO,
 				    PLAT_RESOURCE_ACPI_IO_INDEX);
 	if (!res) {
-		dev_err(&pdev->dev, "Failed to get io resource\n");
+		dev_err(&pdev->dev, "Failed to get IO resource\n");
 		return -ENXIO;
 	}
 	size = resource_size(res);
 	ipcdev.acpi_io_base = res->start;
 	ipcdev.acpi_io_size = size;
-	dev_info(&pdev->dev, "io res: %pR\n", res);
+	dev_info(&pdev->dev, "IO res: %pR\n", res);
 
 	punit_res = punit_res_array;
 	/* This is index 0 to cover BIOS data register */
@@ -836,7 +836,7 @@ static int ipc_plat_get_res(struct platform_device *pdev)
 	res = platform_get_resource(pdev, IORESOURCE_MEM,
 				    PLAT_RESOURCE_IPC_INDEX);
 	if (!res) {
-		dev_err(&pdev->dev, "Failed to get ipc resource\n");
+		dev_err(&pdev->dev, "Failed to get IPC resource\n");
 		return -ENXIO;
 	}
 	size = PLAT_RESOURCE_IPC_SIZE + PLAT_RESOURCE_GCR_SIZE;
@@ -849,7 +849,7 @@ static int ipc_plat_get_res(struct platform_device *pdev)
 	ipcdev.ipc_base = addr;
 
 	ipcdev.gcr_mem_base = addr + PLAT_RESOURCE_GCR_OFFSET;
-	dev_info(&pdev->dev, "ipc res: %pR\n", res);
+	dev_info(&pdev->dev, "IPC res: %pR\n", res);
 
 	ipcdev.telem_res_inval = 0;
 	res = platform_get_resource(pdev, IORESOURCE_MEM,
@@ -911,7 +911,7 @@ static int ipc_plat_probe(struct platform_device *pdev)
 
 	ipcdev.irq = platform_get_irq(pdev, 0);
 	if (ipcdev.irq < 0) {
-		dev_err(&pdev->dev, "Failed to get irq\n");
+		dev_err(&pdev->dev, "Failed to get IRQ\n");
 		return -EINVAL;
 	}
 
@@ -923,13 +923,13 @@ static int ipc_plat_probe(struct platform_device *pdev)
 
 	ret = ipc_create_pmc_devices();
 	if (ret) {
-		dev_err(&pdev->dev, "Failed to create pmc devices\n");
+		dev_err(&pdev->dev, "Failed to create PMC devices\n");
 		return ret;
 	}
 
 	if (devm_request_irq(&pdev->dev, ipcdev.irq, ioc, IRQF_NO_SUSPEND,
 			     "intel_pmc_ipc", &ipcdev)) {
-		dev_err(&pdev->dev, "Failed to request irq\n");
+		dev_err(&pdev->dev, "Failed to request IRQ\n");
 		ret = -EBUSY;
 		goto err_irq;
 	}
@@ -980,12 +980,12 @@ static int __init intel_pmc_ipc_init(void)
 
 	ret = platform_driver_register(&ipc_plat_driver);
 	if (ret) {
-		pr_err("Failed to register PMC ipc platform driver\n");
+		pr_err("Failed to register PMC IPC platform driver\n");
 		return ret;
 	}
 	ret = pci_register_driver(&ipc_pci_driver);
 	if (ret) {
-		pr_err("Failed to register PMC ipc pci driver\n");
+		pr_err("Failed to register PMC IPC PCI driver\n");
 		platform_driver_unregister(&ipc_plat_driver);
 		return ret;
 	}

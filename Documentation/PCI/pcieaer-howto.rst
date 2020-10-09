@@ -206,7 +206,7 @@ error_detected(dev, pci_channel_io_frozen) to all drivers within
 a hierarchy in question. Then, performing link reset at upstream is
 necessary. As different kinds of devices might use different approaches
 to reset link, AER port service driver is required to provide the
-function to reset link via callback parameter of pcie_do_recovery()
+function to reset link via callback parameter of pcie_do_fatal_recovery()
 function. If reset_link is not NULL, recovery function will use it
 to reset the link. If error_detected returns PCI_ERS_RESULT_CAN_RECOVER
 and reset_link returns PCI_ERS_RESULT_RECOVERED, the error handling goes

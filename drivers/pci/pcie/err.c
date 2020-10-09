@@ -79,11 +79,6 @@ static int report_error_detected(struct pci_dev *dev,
 	return 0;
 }
 
-static int report_frozen_detected(struct pci_dev *dev, void *data)
-{
-	return report_error_detected(dev, pci_channel_io_frozen, data);
-}
-
 static int report_normal_detected(struct pci_dev *dev, void *data)
 {
 	return report_error_detected(dev, pci_channel_io_normal, data);
@@ -146,9 +141,59 @@ out:
 	return 0;
 }
 
-pci_ers_result_t pcie_do_recovery(struct pci_dev *dev,
-			pci_channel_state_t state,
+pci_ers_result_t pcie_do_fatal_recovery(struct pci_dev *dev,
 			pci_ers_result_t (*reset_link)(struct pci_dev *pdev))
+{
+	struct pci_dev *udev;
+	struct pci_bus *parent;
+	struct pci_dev *pdev, *temp;
+	pci_ers_result_t result;
+
+	if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE)
+		udev = dev;
+	else
+		udev = dev->bus->self;
+
+	parent = udev->subordinate;
+	pci_walk_bus(parent, pci_dev_set_disconnected, NULL);
+
+        pci_lock_rescan_remove();
+        pci_dev_get(dev);
+        list_for_each_entry_safe_reverse(pdev, temp, &parent->devices,
+					 bus_list) {
+		pci_stop_and_remove_bus_device(pdev);
+	}
+
+	result = reset_link(udev);
+
+	if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE) {
+		/*
+		 * If the error is reported by a bridge, we think this error
+		 * is related to the downstream link of the bridge, so we
+		 * do error recovery on all subordinates of the bridge instead
+		 * of the bridge and clear the error status of the bridge.
+		 */
+		pci_aer_clear_fatal_status(dev);
+		if (pcie_aer_is_native(dev))
+			pcie_clear_device_status(dev);
+	}
+
+	if (result == PCI_ERS_RESULT_RECOVERED) {
+		if (pcie_wait_for_link(udev, true))
+			pci_rescan_bus(udev->bus);
+		pci_info(dev, "Device recovery from fatal error successful\n");
+        } else {
+		pci_uevent_ers(dev, PCI_ERS_RESULT_DISCONNECT);
+		pci_info(dev, "Device recovery from fatal error failed\n");
+        }
+
+	pci_dev_put(dev);
+	pci_unlock_rescan_remove();
+
+	return result;
+}
+
+pci_ers_result_t pcie_do_nonfatal_recovery(struct pci_dev *dev)
 {
 	pci_ers_result_t status = PCI_ERS_RESULT_CAN_RECOVER;
 	struct pci_bus *bus;
@@ -164,16 +209,7 @@ pci_ers_result_t pcie_do_recovery(struct pci_dev *dev,
 	bus = dev->subordinate;
 
 	pci_dbg(dev, "broadcast error_detected message\n");
-	if (state == pci_channel_io_frozen) {
-		pci_walk_bus(bus, report_frozen_detected, &status);
-		status = reset_link(dev);
-		if (status != PCI_ERS_RESULT_RECOVERED) {
-			pci_warn(dev, "link reset failed\n");
-			goto failed;
-		}
-	} else {
-		pci_walk_bus(bus, report_normal_detected, &status);
-	}
+	pci_walk_bus(bus, report_normal_detected, &status);
 
 	if (status == PCI_ERS_RESULT_CAN_RECOVER) {
 		status = PCI_ERS_RESULT_RECOVERED;

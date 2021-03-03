@@ -717,6 +717,9 @@ static irqreturn_t pciehp_ist(int irq, void *dev_id)
 		goto out;
 	}
 
+	ctrl_info(ctrl, "Slot(%s): hotplug events %x\n",
+		  slot_name(ctrl), events);
+
 	/* Check Attention Button Pressed */
 	if (events & PCI_EXP_SLTSTA_ABP) {
 		ctrl_info(ctrl, "Slot(%s): Attention button pressed\n",
